@@ -1,0 +1,7 @@
+Changes
+Makefile.PL
+MANIFEST
+README
+t/Bio-FASTASequence.t
+lib/Bio/FASTASequence.pm
+META.yml                                 Module meta-data (added by MakeMaker)
