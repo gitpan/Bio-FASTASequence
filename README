@@ -1,4 +1,4 @@
-Bio::FASTASequence version 0.01
+Bio::FASTASequence version 0.03
 ==========================
 
 This module aims to simplify the work with fasta-sequences. It parses

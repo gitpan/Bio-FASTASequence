@@ -4,3 +4,9 @@ Revision history for Perl extension FASTASequence.
 	- original version; created by h2xs 1.22 with options
 		-XA -n FASTASequence
 
+0.02 
+	- more description lines are excepted
+
+0.03
+	- export sequence-information to XML
+

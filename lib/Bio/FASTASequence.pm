@@ -1,18 +1,20 @@
 package Bio::FASTASequence;
 
-use 5.008;
+use 5.006;
 use strict;
 use warnings;
 
 require Exporter;
 
-our @ISA = qw(Exporter);
+our @ISA         = qw(Exporter);
 our %EXPORT_TAGS = ();
-our @EXPORT_OK = ();
-our @EXPORT = qw();
-our $VERSION = '0.02';
+our @EXPORT_OK   = ();
+our @EXPORT      = qw();
+our $VERSION     = '0.03';
 
-# Preloaded methods go here.
+#
+# new creates a new instance of Bio::FASTASequence
+#
 sub new{
   my ($class, $string_text) = @_;
   my ($description,$accession_nr);
@@ -22,141 +24,179 @@ sub new{
   }
   my $self = {};
   bless($self,$class);
-
-  $string_text =~ s/^(\r?\n)+//;
-  $string_text =~ s/^>+/>/;
-  my ($description_line,$sequence) = split(/\n/,$string_text,2);
-  $description_line =~ s/\s+$//;
-  $description_line =~ s/\r?\n/\n/g;
-  $sequence =~ s/\r?\n//g;
-  unless($description_line =~ /^>/){
-    $self->{accession_nr} = "";
-  }
-  else{
-    if($description_line =~ /^>gi\|/){
-      my ($gi,$number,$db);
-      $description_line =~ s/^>//;
-      ($gi,$number,$db,$accession_nr,$description) = split(/\|/,$description_line);
+  my $sequencer;
+  #print STDERR "Object doesn't contain fasta-sequence" if($string_text && !_is_fasta($string_text));
+  die "Object doesn't contain fasta-sequence" if($string_text && !_is_fasta($string_text));
+  if($string_text){
+    $string_text =~ s/^(\r?\n)+//;
+    $string_text =~ s/^>+/>/;
+    my ($description_line,$sequence) = split(/\n/,$string_text,2);
+    $description_line =~ s/\s+$//;
+    $description_line =~ s/\r?\n/\n/g;
+    $sequence =~ s/\r?\n//g;
+    unless($description_line =~ /^>/){
+      $self->{accession_nr} = "";
     }
-    elsif($description_line =~ /^>sp\|/){
-      $description_line =~ s/^>//;
-      my $desc;
-      ($desc,$description) = split(/\s/,$description_line,2);
-      $accession_nr = (split(/\|/,$desc))[1];
-    }
-    elsif($description_line =~ /^>tr\|/){
-      $description_line =~ s/^>//;
-      my $desc;
-      ($desc,$description) = split(/\s/,$description_line,2);
-      $accession_nr = (split(/\|/,$desc))[1];
-    }
-    elsif($description_line =~ /^>[XY\d+]/){
-      $description_line =~ s/>//;
-      chomp $description_line;
-      $description = (split(/\s/,$description_line,3))[-1];
-      $accession_nr = (split(/\s/,$description_line,3))[0];
-    }
-    elsif($description_line =~ /^>[0-9A-Za-z_]+\s?/){
-      $description_line =~ s/^>//;
-      #-------------------------------------------------#
-      # IPI-Sequences                                   #
-      #-------------------------------------------------#
-      if($description_line =~ /^IPI:/){
-        # split only at first whitespace and take first element
-        my $foreign_numbers = (split(/\s/,$description_line,2))[0];
-        $description = (split(/\s/,$description_line,3))[2];
-        my @foreign_acs = split(/\|/,$foreign_numbers);
-        # cross-references to other databases
-        foreach my $f_ac(@foreign_acs){
-          my ($key, $value) = split(/:/,$f_ac);
-          $f_db_nr{$key} = $value;
-        }
-	unless($f_db_nr{'SWISS-PROT'}){
-	  $f_db_nr{'SWISS-PROT'} = "NULL";
-	}
-	unless($f_db_nr{'ENSEMBL'}){
-	  $f_db_nr{'ENSEMBL'} = "NULL";
-	}
-	unless($f_db_nr{'REFSEQ_XP'}){
-	  $f_db_nr{'REFSEQ_XP'} = "NULL";
-	}
-	unless($f_db_nr{'TREMBL'}){
-	  $f_db_nr{'TREMBL'} = "NULL";
-	}
-        $accession_nr = $f_db_nr{'IPI'};
-	delete $f_db_nr{IPI};
-      }
-      #-----------------------------------------#
-      # format begins with accession-nr         #
-      #-----------------------------------------#
-      elsif($description_line =~ /^[A-Za-z][0-9][A-Z0-9a-z]{3}[0-9][\s\|]/){
+    else{
+      # parsing the description line
+      if($description_line =~ /^>gi\|/){
+        my ($gi,$number,$db);
         $description_line =~ s/^>//;
-        if($description_line =~ /\|/){
-          ($accession_nr, $description) = split(/\|/,$description_line,2);
-        }
-	else{
-          ($accession_nr, $description) = split(/\s/,$description_line,2);
-	}
+        ($gi,$number,$db,$accession_nr,$description) = split(/\|/,$description_line);
       }
-      elsif($description_line =~ /^[A-Za-z0-9_]+\s*?$/){
+      elsif($description_line =~ /^>sp\|/ || $description_line =~ /^>sptrembl\|/){
         $description_line =~ s/^>//;
+        my $desc;
+        ($desc,$description) = split(/\s/,$description_line,2);
+        $accession_nr = (split(/\|/,$desc))[1];
+      }
+      elsif($description_line =~ /^>tr\|/){
+        $description_line =~ s/^>//;
+        my $desc;
+        ($desc,$description) = split(/\s/,$description_line,2);
+        $accession_nr = (split(/\|/,$desc))[1];
+      }
+      elsif($description_line =~ /^>[XY\d+]/){
+        $description_line =~ s/>//;
         chomp $description_line;
-	$accession_nr = $description_line;
-        $description_line = '';
+        $description = (split(/\s/,$description_line,3))[-1];
+        $accession_nr = (split(/\s/,$description_line,3))[0];
       }
-      else{
+      elsif($description_line =~ /^>[0-9A-Za-z_]+\s?/){
         $description_line =~ s/^>//;
-        my $seq_id;
-        ($seq_id, $accession_nr,$description)= split(/\s/,$description_line,3);
+        #-------------------------------------------------#
+        # IPI-Sequences                                   #
+        #-------------------------------------------------#
+        if($description_line =~ /^IPI:/){
+          # split only at first whitespace and take first element
+          my $foreign_numbers = (split(/\s/,$description_line,2))[0];
+          $description = (split(/\s/,$description_line,3))[2];
+          my @foreign_acs = split(/\|/,$foreign_numbers);
+          # cross-references to other databases
+          foreach my $f_ac(@foreign_acs){
+            my ($key, $value) = split(/:/,$f_ac);
+            $f_db_nr{$key} = $value;
+          }
+          unless($f_db_nr{'SWISS-PROT'}){
+            $f_db_nr{'SWISS-PROT'} = "NULL";
+          }
+          unless($f_db_nr{'ENSEMBL'}){
+            $f_db_nr{'ENSEMBL'} = "NULL";
+          }
+          unless($f_db_nr{'REFSEQ_XP'}){
+            $f_db_nr{'REFSEQ_XP'} = "NULL";
+          }
+          unless($f_db_nr{'TREMBL'}){
+            $f_db_nr{'TREMBL'} = "NULL";
+          }
+          $accession_nr = $f_db_nr{'IPI'};
+          delete $f_db_nr{IPI};
+        }
+        #-----------------------------------------#
+        # format begins with accession-nr         #
+        #-----------------------------------------#
+        elsif($description_line =~ /^[A-Za-z][0-9][A-Z0-9a-z]{3}[0-9][\s\|]/){
+          if($description_line =~ /\|/){
+            ($accession_nr, $description) = split(/\|/,$description_line,2);
+          }
+          else{
+            ($accession_nr, $description) = split(/\s/,$description_line,2);
+	  }
+        }
+        elsif($description_line =~ /^[A-Za-z0-9_]+\s*?$/){
+          chomp $description_line;
+          $accession_nr = $description_line;
+          $description_line = '';
+        }
+        else{
+          ($accession_nr,$description)= split(/\s/,$description_line,2);
+        }
       }
     }
+
+    $accession_nr =~ s/^>//;
+    $accession_nr =~ s/[^\w\d]*?$//;
+    $accession_nr =~ s/\.\d$//;
+    $sequence =~ s/[^A-Z]//g;
+    $sequencer = $sequence;
   }
 
-  $accession_nr =~ s/^>//;
-  $accession_nr =~ s/[^\w\d]*?$//;
-  $accession_nr =~ s/\.\d$//;
-  $sequence =~ s/[^A-Z]//g;
-
-  $self->{text}         = $sequence;
+  $self->{text}         = $sequencer;
   $self->{accession_nr} = $accession_nr;
   $self->{description}  = $description;
-  $self->{seq_length}   = length($sequence);
+  $self->{seq_length}   = length($sequencer);
   $self->{dbrefs}       = \%f_db_nr;
   $self->{crc64}        = $self->_crc64();
 
   return $self;
 }#end new
 
+#
+# getSequence returns the sequence itself.
+#
 sub getSequence{
   my ($class) = @_;
   return $class->{text};
 }# end getText
 
+#
+# _is_fasta checks whether the given Sequence is in fasta-format or not
+#
+sub _is_fasta{
+  my ($sequence) = @_;
+  my @lines      = split(/\r?\n/,$sequence);
+  my $desc       = shift(@lines);
+  my $seq        = join("",@lines);
+  $seq =~ s/\s+//g;
+  if($desc =~ /^>/ && $seq !~ /[^A-NP-Z\*\-]/i && length($seq) > 0){
+    return 1;
+  }
+  return 0;
+}# end _is_fasta
+
+#
+# getSequenceLength returns how man aminoacids the sequence contains
+#
 sub getSequenceLength{
   my ($class) = @_;
   return $class->{seq_length};
 }# end getSequenceLength
 
+# 
+# getAccessionNr returns the parsed accession number
+#
 sub getAccessionNr{
   my ($class) = @_;
   return $class->{accession_nr};
 }# end of getAccessionNr
 
+#
+# getDescription returns the description
+#
 sub getDescription{
   my ($class) = @_;
   return $class->{description}
 }# end getDescription
 
+#
+# getCrc64 returns the crc64-checksum of the sequence
+#
 sub getCrc64{
   my ($class) = @_;
   return $class->{crc64};
 }# end getCrc64
 
+# 
+# getDBRefs returns an anonymous hash containing all references to foreign databases
+#
 sub getDBRefs{
   my ($class) = @_;
   return $class->{dbrefs};
 }# end getDBRefs
 
+#
+# allIndexesOf returns a reference to an array containing all positions of the requested Substring
+#
 sub allIndexesOf{
   my ($self,$search) = @_;
   my $i = 1;
@@ -171,6 +211,10 @@ sub allIndexesOf{
   return \@indices;
 }# end allIndicesOf
 
+#
+# _crc64 calculates the crc64-checksum of the sequence. It's the crc64-checksum like at swiss-prot
+# the code is mainly adapted from SWISS::CRC64
+#
 sub _crc64 {
   my ($self)     = @_;
   my $text = $self->{text};
@@ -209,39 +253,80 @@ sub _crc64 {
   return sprintf("%08X%08X", $high, $low);
 }# end crc64
 
+#
+# seq2file prints the sequence into a file in fasta-file
+#
 sub seq2file{
   my ($self,$file,$args_ref) = @_;
+  # open the file to write
   open(W_SEQUENCE,">$file") or die "Can't open $file: $!\n";
   print W_SEQUENCE ">",$self->{accession_nr};
+  # add the references
   foreach my $dbkey(keys(%{$self->{dbrefs}})){
-  print W_SEQUENCE "|".$dbkey.":".$self->{dbrefs}->{$dbkey};
+    print W_SEQUENCE "|".$dbkey.":".$self->{dbrefs}->{$dbkey} if($self->{dbrefs}->{$dbkey} ne 'NULL');
   }
+  # add description
   print W_SEQUENCE " ",$self->{description},"\n";
+  # add the sequence
   print W_SEQUENCE $self->{text},"\n";
   close W_SEQUENCE;
 }# end seq2file
 
+#
+# getFASTA return a string in fasta-format
+#
 sub getFASTA{
   my ($self)     = @_;
   my $fasta = ">".$self->{accession_nr};
+  # add the references to foreign databases
   foreach my $dbkey(keys(%{$self->{dbrefs}})){
     $fasta .= "|".$dbkey.":".$self->{dbrefs}->{$dbkey} if($self->{dbrefs}->{$dbkey} ne "NULL");
   }
+  # add description
   $fasta .= " ".$self->{description} if($self->{description});
   $fasta .= "\n";
+  # add sequence
   $fasta .= $self->{text}."\n";
   return $fasta;
 }# end getFASTA
 
+#
+# addDBRef adds a reference to a foreign database to the anonymous hash
+#
 sub addDBRef{
   my ($self,$db,$dbref) = @_;
+  # if a reference to the requested database already exists, append the new reference
   if($self->{dbrefs}->{$db} && ($self->{dbrefs}->{$db} ne 'NULL')){
     $self->{dbrefs}->{$db} .= ";".$dbref;
   }
+  # if no reference exists, add the reference to the hash
   else{
     $self->{dbrefs}->{$db} = $dbref;
   }
 }# end addDBRef
+
+#
+# seq2xml creates an xml-string containing all information about the given sequence.
+#
+sub seq2xml{
+  my ($self) = @_;
+  # create the tags representing the references to foreign databases, e.g. SWISS-Prot
+  my $dbrefs = " ";
+  foreach(keys(%{$self->{dbrefs}})){
+    my $key     = uc($_);
+    $dbrefs .= "\n<".$key.'>'.${$self->{dbrefs}}->{$_}.'</'.$key.'>' if(${$self->{dbrefs}}->{$_} ne 'NULL');
+  }
+  $dbrefs    = "\n<DBREFS>$dbrefs</DBREFS>" if($dbrefs ne " ");
+  # create the xml-string
+  my $xml = qq~
+  <SEQUENCE id="$self->{accession_nr}">
+    <DESCRIPTION>$self->{description}</DESCRIPTION>$dbrefs
+    <LENGTH>$self->{seq_length}</LENGTH>
+    <CRC64>$self->{crc64}</CRC64>
+    <TEXT>$self->{text}</TEXT>
+  </SEQUENCE>~;
+  return $xml;
+}# end seq2xml
 
 1;
 __END__
@@ -249,7 +334,7 @@ __END__
 
 =head1 NAME
 
-Bio::FASTASequence - Perl extension Biooinformatics
+Bio::FASTASequence - Perl extension for Bioinformatics. Parsing sequence informations.
 
 =head1 SYNOPSIS
 
@@ -280,6 +365,8 @@ It parses several information about a given FASTA-Sequence such as:
 =item * length of sequence
 
 =item * crc64 checksum (as it is used by SWISS-PROT)
+
+=item * seq2xml
 
 =back
 
