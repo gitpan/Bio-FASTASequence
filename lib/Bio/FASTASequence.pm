@@ -10,9 +10,7 @@ our @ISA = qw(Exporter);
 our %EXPORT_TAGS = ();
 our @EXPORT_OK = ();
 our @EXPORT = qw();
-
-our $VERSION = '0.01';
-
+our $VERSION = '0.02';
 
 # Preloaded methods go here.
 sub new{
@@ -28,6 +26,8 @@ sub new{
   $string_text =~ s/^(\r?\n)+//;
   $string_text =~ s/^>+/>/;
   my ($description_line,$sequence) = split(/\n/,$string_text,2);
+  $description_line =~ s/\s+$//;
+  $description_line =~ s/\r?\n/\n/g;
   $sequence =~ s/\r?\n//g;
   unless($description_line =~ /^>/){
     $self->{accession_nr} = "";
@@ -40,9 +40,15 @@ sub new{
     }
     elsif($description_line =~ /^>sp\|/){
       $description_line =~ s/^>//;
-      $description = (split(/\s/,$description_line,2))[1];
-      my $desc = (split(/\s/,$description_line,2))[0];
-      $accession_nr = (split(/\|/,$description_line))[1];
+      my $desc;
+      ($desc,$description) = split(/\s/,$description_line,2);
+      $accession_nr = (split(/\|/,$desc))[1];
+    }
+    elsif($description_line =~ /^>tr\|/){
+      $description_line =~ s/^>//;
+      my $desc;
+      ($desc,$description) = split(/\s/,$description_line,2);
+      $accession_nr = (split(/\|/,$desc))[1];
     }
     elsif($description_line =~ /^>[XY\d+]/){
       $description_line =~ s/>//;
@@ -50,7 +56,7 @@ sub new{
       $description = (split(/\s/,$description_line,3))[-1];
       $accession_nr = (split(/\s/,$description_line,3))[0];
     }
-    elsif($description_line =~ /^>[0-9A-Z_]+\s?/){
+    elsif($description_line =~ /^>[0-9A-Za-z_]+\s?/){
       $description_line =~ s/^>//;
       #-------------------------------------------------#
       # IPI-Sequences                                   #
@@ -83,7 +89,7 @@ sub new{
       #-----------------------------------------#
       # format begins with accession-nr         #
       #-----------------------------------------#
-      elsif($description_line =~ /^[A-Z][0-9][A-Z0-9]{3}[0-9][\s\|]/){
+      elsif($description_line =~ /^[A-Za-z][0-9][A-Z0-9a-z]{3}[0-9][\s\|]/){
         $description_line =~ s/^>//;
         if($description_line =~ /\|/){
           ($accession_nr, $description) = split(/\|/,$description_line,2);
@@ -92,10 +98,11 @@ sub new{
           ($accession_nr, $description) = split(/\s/,$description_line,2);
 	}
       }
-      elsif($description_line =~ /^[A-Z0-9_]+$/){
+      elsif($description_line =~ /^[A-Za-z0-9_]+\s*?$/){
         $description_line =~ s/^>//;
         chomp $description_line;
 	$accession_nr = $description_line;
+        $description_line = '';
       }
       else{
         $description_line =~ s/^>//;
@@ -106,7 +113,8 @@ sub new{
   }
 
   $accession_nr =~ s/^>//;
-  $accession_nr =~ s/\.\d//;
+  $accession_nr =~ s/[^\w\d]*?$//;
+  $accession_nr =~ s/\.\d$//;
   $sequence =~ s/[^A-Z]//g;
 
   $self->{text}         = $sequence;
@@ -179,7 +187,7 @@ sub _crc64 {
       my $low_part  = $i;
       my $high_part = 0;
       for my $j(0..7) {
-        my $flag = $low_part & 1; # rflag ist f?r alle ungeraden zahlen 1
+        my $flag = $low_part & 1; # rflag ist für alle ungeraden zahlen 1
         $low_part >>= 1;# um ein bit nach rechts verschieben
         $low_part |= (1 << 31) if $high_part & 1; # bitweises oder mit 2147483648 (), wenn $parth ungerade
         $high_part >>= 1; # um ein bit nach rechtsverschieben
@@ -217,9 +225,10 @@ sub getFASTA{
   my ($self)     = @_;
   my $fasta = ">".$self->{accession_nr};
   foreach my $dbkey(keys(%{$self->{dbrefs}})){
-  $fasta .= "|".$dbkey.":".$self->{dbrefs}->{$dbkey};
+    $fasta .= "|".$dbkey.":".$self->{dbrefs}->{$dbkey} if($self->{dbrefs}->{$dbkey} ne "NULL");
   }
-  $fasta .= " ".$self->{description}."\n";
+  $fasta .= " ".$self->{description} if($self->{description});
+  $fasta .= "\n";
   $fasta .= $self->{text}."\n";
   return $fasta;
 }# end getFASTA
@@ -240,7 +249,7 @@ __END__
 
 =head1 NAME
 
-FASTASequence - Perl extension Biooinformatics
+Bio::FASTASequence - Perl extension Biooinformatics
 
 =head1 SYNOPSIS
 
@@ -253,10 +262,7 @@ YNTSLETRLTISKDTSRNQVVLTMDPVDTATYYCARITVIPAPAGYMDVWGRGTPVTVSS
 
 =head1 ABSTRACT
 
-  This should be the abstract for FASTASequence.
-  The abstract is used when making PPD (Perl Package Description) files.
-  If you don't want an ABSTRACT you should also edit Makefile.PL to
-  remove the ABSTRACT_FROM option.
+  Bio::FASTASequence is a perl module to parse information out off a Fasta-Sequence.
 
 =head1 DESCRIPTION
 
@@ -403,6 +409,10 @@ http://modules.renee-baecker.de # not available yet - this site is under constru
 the crc64-routine is based on the
 SWISS::CRC64
 module.
+
+=head1 MODIFICATIONS
+
+More FASTA-Description lines are accepted.
 
 =head1 AUTHOR
 
