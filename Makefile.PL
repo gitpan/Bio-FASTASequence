@@ -6,7 +6,10 @@ WriteMakefile(
     'NAME'		=> 'Bio::FASTASequence',
     'VERSION_FROM'	=> 'lib/Bio/FASTASequence.pm', # finds $VERSION
     'PREREQ_PM'		=> {}, # e.g., Module::Name => 1.1
+    NO_META           => 1,
     ($] >= 5.005 ?    ## Add these new keywords supported since 5.005
       (ABSTRACT_FROM => 'lib/Bio/FASTASequence.pm', # retrieve abstract from module
        AUTHOR     => 'Renee Baecker <module@renee-baecker.de>') : ()),
+    ($ExtUtils::MakeMaker::VERSION >= 6.31 ?
+      (LICENSE        => 'perl') : ()),
 );
