@@ -1,6 +1,6 @@
 ---
 name:         Bio-FASTASequence
-version:      0.04
+version:      0.05
 author:
   - 'Renee Baecker <module@renee-baecker.de>'
 abstract: "Perl extension for Bioinformatics. Parsing sequence informations."
@@ -14,8 +14,8 @@ meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.2.html
   version: 1.2
 provides:
-  Class::Superclasses:
+  Bio::FASTASequence:
     file: lib/Bio/FASTASequence.pm
-    version: 0.04
+    version: 0.05
 resources:
   license: http://dev.perl.org/licenses/

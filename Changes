@@ -10,3 +10,6 @@ Revision history for Perl extension FASTASequence.
 0.03
 	- export sequence-information to XML
 
+0.05
+    - cleanup of META.yml
+    + more tests

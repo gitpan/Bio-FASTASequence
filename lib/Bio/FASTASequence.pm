@@ -10,7 +10,7 @@ our @ISA         = qw(Exporter);
 our %EXPORT_TAGS = ();
 our @EXPORT_OK   = ();
 our @EXPORT      = qw();
-our $VERSION     = '0.04';
+our $VERSION     = '0.05';
 
 #
 # new creates a new instance of Bio::FASTASequence
