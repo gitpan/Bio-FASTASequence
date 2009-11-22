@@ -4,13 +4,7 @@ use 5.006;
 use strict;
 use warnings;
 
-require Exporter;
-
-our @ISA         = qw(Exporter);
-our %EXPORT_TAGS = ();
-our @EXPORT_OK   = ();
-our @EXPORT      = qw();
-our $VERSION     = '0.05';
+our $VERSION     = '0.06';
 
 #
 # new creates a new instance of Bio::FASTASequence
@@ -509,9 +503,9 @@ feel free to contact me.
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2004 by Renee Baecker
+Copyright 2004 - 2009 by Renee Baecker
 
 This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself. 
+it under the terms of Artistic License 2.0. 
 
 =cut
