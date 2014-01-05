@@ -1,10 +1,12 @@
 package Bio::FASTASequence;
 
+# ABSTRACT: Parsing sequence informations in FASTA format.
+
 use 5.006;
 use strict;
 use warnings;
 
-our $VERSION     = '0.06';
+our $VERSION = '0.07';
 
 #
 # new creates a new instance of Bio::FASTASequence
@@ -323,12 +325,18 @@ sub seq2xml{
 }# end seq2xml
 
 1;
+
 __END__
-# Below is stub documentation for your module. You'd better edit it!
+
+=pod
 
 =head1 NAME
 
-Bio::FASTASequence - Perl extension for Bioinformatics. Parsing sequence informations.
+Bio::FASTASequence - Parsing sequence informations in FASTA format.
+
+=head1 VERSION
+
+version 0.07
 
 =head1 SYNOPSIS
 
@@ -338,10 +346,6 @@ QVTLRESGPALVKPTQTLTLTCTFSGFSLSSTGMCVGWIRQPPGKGLEWLARIDWDDDKY
 YNTSLETRLTISKDTSRNQVVLTMDPVDTATYYCARITVIPAPAGYMDVWGRGTPVTVSS
   ~;
   my $seq = Bio::FASTASequence->new($fasta);
-
-=head1 ABSTRACT
-
-  Bio::FASTASequence is a perl module to parse information out off a Fasta-Sequence.
 
 =head1 DESCRIPTION
 
@@ -448,6 +452,10 @@ returns the sequence in FASTA-format
 	print 'This sequence contains '.scalar($seq->allIndexesOf('C').' times Cystein at the following positions:';
 	print $_+1.', ' for(@{$seq->allIndexesOf('C')});
 
+=head1 ABSTRACT
+
+  Bio::FASTASequence is a perl module to parse information out off a Fasta-Sequence.
+
 =head1 ADDITIONAL INFORMATION
 
 =head3 accepted formats
@@ -497,15 +505,14 @@ More FASTA-Description lines are accepted.
 
 =head1 AUTHOR
 
-Renee Baecker, E<lt>module@renee-baecker.deE<gt>
-
-feel free to contact me.
+Renee Baecker <reneeb@cpan.org>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2004 - 2009 by Renee Baecker
+This software is Copyright (c) 2014 by Renee Baecker.
 
-This library is free software; you can redistribute it and/or modify
-it under the terms of Artistic License 2.0. 
+This is free software, licensed under:
+
+  The Artistic License 2.0 (GPL Compatible)
 
 =cut
